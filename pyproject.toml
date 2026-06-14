@@ -7,13 +7,12 @@ include = ["packages*"]
 
 [project]
 name = "gaokao-evidence-skill"
-version = "0.2.0"
-description = "Evidence-driven Gaokao college application recommendation — Claude Code Skill"
+version = "0.3.0"
+description = "Evidence-driven Gaokao college application advisor — pure Claude Code Skill, zero external API"
 requires-python = ">=3.11"
 
 dependencies = [
-    "openai>=1.30",
-    "tiktoken>=0.7",
+    # Pure Python rule engine — no network calls, no API keys required
 ]
 
 [project.optional-dependencies]

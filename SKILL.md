@@ -1,7 +1,7 @@
 # Gaokao Real Evidence Advisor
 
 ## Description
-证据驱动的高考志愿推荐系统。给定"学校+专业"，自动完成10+维度、**600+条搜索查询**的深度搜索，证据收集、交叉验证、画像报告生成。**使用 Claude 自身的 WebSearch 能力，零外部依赖，即插即用。**
+证据驱动的高考志愿推荐系统。给定"学校+专业"，自动完成10+维度、**600+条搜索查询**的深度搜索，证据收集、交叉验证、画像报告生成。**全程由 Claude 自身完成——WebSearch 负责搜索，Claude 原生推理负责 Claim 提取和报告撰写，零外部 API 依赖，即插即用。**
 
 ## Triggers
 - `/gaokao "学校名" "专业名"` 或 `/高考 "学校名" "专业名"`
@@ -15,6 +15,7 @@
 - **社媒重要**: 大量搜索知乎/贴吧/小红书/B站等平台的真实反馈（120+条）
 - **大几百条查询**: 总搜索量≥500条，确保信息量达到"能决定命运"的级别
 - **持久执行**: 每批执行 8-10 条搜索，每 50 条保存中间结果，直到全部完成
+- **Claude 原生分析**: 搜索完成后由 Claude 直接抽取 Claim、分析共识/争议、撰写报告。不依赖任何外部 LLM API（DeepSeek/OpenAI 等）
 
 ## Workflow
 
@@ -22,18 +23,78 @@
 将下方所有查询模板中的 `{school}` 替换为学校名，`{major}` 替换为专业名。
 **总计约 600+ 条独立搜索查询**，必须在 Phase 2 中全部执行。
 
-### Phase 2: 分批执行大规模搜索
-使用 `WebSearch` 工具执行全部查询。**每批执行 8-10 条**，每批完成后保存中间结果到 `reports/raw_search_{school}_{major}_batch{N}.json`。
+### Phase 2: 分批执行大规模搜索 + 增量 Claim 提取
+使用 `WebSearch` 工具执行全部查询。**每批执行 8-10 条**，每批完成后：
+
+1. 保存原始结果到 `reports/raw_search_{school}_{major}_batch{N}.json`
+2. **立即从本批结果中提取关键 Claim**（每条 1-2 句话 + 维度标签 + 可信度标记），
+   追加到 `reports/claims_{school}_{major}.json`
+
 持续执行直到全部查询完成。不要提前终止，不要跳维度。
 
-### Phase 3: 合并结果并运行分析
-所有批次完成后，合并 JSON 文件，运行：
-```bash
-python analyze.py "{school}" "{major}" "reports/raw_search_{school}_{major}.json"
+Claim 提取格式：
+```json
+{
+  "claim_text": "从搜索摘要中提炼的具体声明（1-2句话，不可编造）",
+  "dimension": "admission|education|baoyan|employment|industry|lab|social|life|risk",
+  "polarity": "positive|negative|neutral",
+  "confidence": "high|medium|low",
+  "source_url": "搜索结果URL",
+  "source_title": "搜索结果标题"
+}
 ```
 
-### Phase 4: 输出报告
-输出 `reports/{school}_{major}_报告.md`，按照 Output Format 结构呈现。
+### Phase 3: Claude 原生分析
+
+所有批次完成后，基于 `reports/claims_{school}_{major}.json` 中的全部 Claim，执行以下分析：
+
+#### 3.1 运行规则引擎（纯 Python，无需 API）
+```bash
+cd ~/.claude/skills/gaokao-evidence && python -c "
+import json, sys
+sys.path.insert(0, '.')
+from packages.ranking.scoring import generate_consensus_analysis, analyze_risk_items, find_counter_evidence, compute_conclusion_confidence
+
+with open('reports/claims_{school}_{major}.json', encoding='utf-8') as f:
+    claims = json.load(f)
+
+consensus = generate_consensus_analysis(claims)
+risks = analyze_risk_items(claims)
+counters = find_counter_evidence(claims)
+dim_count = len(set(c.get('dimension','') for c in claims))
+conf = compute_conclusion_confidence(len(claims), dim_count, has_official=True, has_social=True, has_counter_evidence=len(counters)>0)
+
+print(json.dumps({'consensus': consensus, 'risks': risks, 'counters': len(counters), 'confidence': conf}, ensure_ascii=False, indent=2))
+" > reports/analysis_{school}_{major}.json
+```
+
+#### 3.2 Claude 交叉验证
+读取 `reports/claims_{school}_{major}.json` 和 `reports/analysis_{school}_{major}.json`，执行：
+
+- **去重与合并**：同一事实的多个 Claim 合并，标注独立来源数量
+- **共识/争议/孤证分类**：结合规则引擎输出，Claude 做语义级判断
+- **反证核查**：对矛盾 Claim 对逐条判断可信度
+- **缺失维度识别**：哪些维度 Claim 数量不足（<5条），标记为"数据缺失"
+- **可信度校准**：综合来源权威性、时效性、独立来源数量，给出每条结论的可信度
+
+#### 3.3 生成关键问答
+基于 Claim 数据集，回答 5 个核心问题：
+1. 该学校该专业总体值得报考吗？明确结论 + 置信度
+2. 最大的优势和最大的风险分别是什么？
+3. 什么样的学生适合/不适合？
+4. 本科就业、考研、保研三条路径的概率和性价比？
+5. 对普通家庭学生的性价比分析？
+
+### Phase 4: Claude 撰写完整报告
+
+按照下方 Output Format 结构，将 Phase 3 的分析结果撰写为完整报告，写入 `reports/{school}_{major}_报告.md`。
+
+报告生成原则：
+- 每个结论必须标注在 Phase 3 中确定的**可信度** + **证据来源 URL**
+- 数值必须标注时间（如"2024届数据"）
+- 不确定的数据用"数据缺失"明确标注，禁止编造
+- 社媒反馈必须区分"共识"/"争议"/"孤证"
+- 报告目标字数: **15,000-25,000 字**
 
 ---
 
@@ -883,16 +944,17 @@ python analyze.py "{school}" "{major}" "reports/raw_search_{school}_{major}.json
 ## 执行说明
 
 ### 搜索执行策略
-1. **Phase 2 必须执行所有查询模板**。每批8-10条搜索，执行完一批后保存中间结果。
-2. 保存格式：每条搜索结果记录 `{dimension, query, title, url, snippet}`。
-3. 每完成50条保存一个batch JSON，最后合并为 `reports/raw_search_{school}_{major}.json`。
-4. 最终JSON结构：
+1. **Phase 2 必须执行所有查询模板**。每批8-10条搜索，执行完一批后：
+   - 保存原始结果到 `reports/raw_search_{school}_{major}_batch{N}.json`
+   - 立即从搜索摘要中提取关键 Claim，追加到 `reports/claims_{school}_{major}.json`
+2. 保存格式：每条搜索结果记录 `{dimension, query, title, url, snippet}`
+3. 每完成 50 条搜索保存一个 batch JSON，Claim 无需单独分batch（直接追加到同一文件）
+4. 搜索 JSON 结构：
 ```json
 {
   "school": "{school}",
   "major": "{major}",
   "search_date": "ISO日期",
-  "total_queries": 600,
   "search_results": [
     {
       "dimension": "school_info",
@@ -910,11 +972,13 @@ python analyze.py "{school}" "{major}" "reports/raw_search_{school}_{major}.json
 - 如果某次搜索失败（无结果），记录后继续下一条
 - 每完成 50 条搜索后暂停 1 分钟，再继续下一轮
 
-### 分析管线
-搜索全部完成后，运行分析脚本（调用DeepSeek API进行Claim抽取和报告生成）：
-```bash
-python analyze.py "{school}" "{major}"
-```
+### 分析管线（全部由 Claude 完成，零外部 API）
+搜索全部完成后：
+1. 读取全部 Claim 文件 `reports/claims_{school}_{major}.json`
+2. 运行 scoring.py 规则引擎（纯 Python，计算共识/争议/风险）
+3. Claude 对全部 Claim 做交叉验证 + 可信度校准
+4. Claude 撰写完整报告（15,000-25,000字）
+5. 输出到 `reports/{school}_{major}_报告.md`
 
 ---
 
@@ -951,3 +1015,29 @@ python analyze.py "{school}" "{major}"
 - 社媒反馈须标注"共识"(≥3个独立来源)/"争议"(正反各半)/"孤证"(仅1个来源)
 - 数值必须标注时间（如"2024届数据"）
 - 报告总字数目标: **15000-25000字** — 这不是玩具，要能决定命运
+
+---
+
+## 附录: 纯 Claude 方案说明
+
+本 Skill 不依赖任何外部 LLM API。以下是方案中使用的文件说明：
+
+### 保留文件（纯规则逻辑，零 API）
+
+| 文件 | 用途 |
+|------|------|
+| `packages/ranking/scoring.py` | 共识分析、风险检测、反证查找（纯规则，无网络调用） |
+| `packages/config.py` | 路径配置 |
+| `packages/nlp/pii_cleaner.py` | PII 清理（合规需要） |
+
+### 不需要的文件
+
+| 文件 | 原因 |
+|------|------|
+| `packages/nlp/llm_service.py` | DeepSeek API 封装，纯 Claude 方案不需要 |
+| `apikey.txt.example` | 不再需要外部 API Key |
+| `openai`/`tiktoken` 依赖 | 不再调用 OpenAI 兼容 API |
+
+### README 注意
+
+README 应同步更新：移除 DeepSeek API Key 配置步骤，移除 `openai` 依赖说明。

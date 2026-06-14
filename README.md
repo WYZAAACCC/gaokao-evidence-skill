@@ -2,27 +2,26 @@
 
 <p align="center">
   <b>证据驱动的高考志愿推荐系统</b><br>
-  <sub>一个 Claude Code Skill — 零基础设施，即插即用</sub>
+  <sub>一个 Claude Code Skill — 零基础设施，零外部 API，即插即用</sub>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/badge/LLM-DeepSeek-brightgreen.svg" alt="DeepSeek">
   <img src="https://img.shields.io/badge/platform-Claude%20Code-orange.svg" alt="Claude Code">
+  <img src="https://img.shields.io/badge/API-none-brightgreen.svg" alt="No API">
 </p>
 
 ---
 
 > **"每个推荐结论必须能追溯到证据。"**
 >
-> 高考志愿是能改变人生轨迹的决策。本系统用 **600+ 条跨维度搜索 + LLM 交叉验证** 抹平信息差。
+> 高考志愿是能改变人生轨迹的决策。本系统用 **600+ 条跨维度搜索 + Claude 原生推理** 抹平信息差。
+> **不需要任何外部 API Key。**
 
 ---
 
-## ⚡ 5 分钟上手
-
-### 1. 安装
+## ⚡ 2 分钟上手
 
 ```bash
 # 克隆到 Claude Code skills 目录
@@ -36,30 +35,15 @@ git clone https://github.com/WYZAAACCC/gaokao-evidence-skill.git \
   $env:USERPROFILE\.claude\skills\gaokao-evidence\
 cd $env:USERPROFILE\.claude\skills\gaokao-evidence\
 
-# 安装 Python 依赖 (仅需 openai + tiktoken)
+# 安装（仅需 Python 标准库，无外部依赖）
 pip install -e .
-
-# 放入 DeepSeek API Key
-echo "sk-your-api-key" > apikey.txt
 ```
 
-### 2. 使用
-
-在 Claude Code 对话中直接说：
+然后在 Claude Code 中直接说：
 
 ```
 帮我分析 南京理工大学 自动化专业
 ```
-
-Claude 将自动执行：
-1. **10 维度 × 600+ 条搜索** — 使用 Claude 内建 WebSearch
-2. **结构化 Claim 抽取** — 调用 DeepSeek API
-3. **交叉验证 & 风险分析** — 共识/争议/反证检测
-4. **生成深度报告** — 15,000+ 字，14 个章节
-
-### 3. 查看报告
-
-报告输出到 `reports/南京理工大学_自动化_报告.md`
 
 ---
 
@@ -70,29 +54,32 @@ Claude 将自动执行：
          │
          ▼
 ┌─────────────────────────────────────┐
-│  Phase 1: 大规模搜索                │
+│  Phase 1: 生成查询                  │
+│  从 600+ 模板生成搜索查询列表        │
+└─────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│  Phase 2: 大规模搜索 + Claim 提取   │
 │  Claude WebSearch × 600+ 条查询     │
-│  院校/专业/录取/保研/就业/行业/     │
-│  实验室/社媒/校园/风险/对比         │
+│  每批 8-10 条，搜完即提取 Claim     │
+│  10维度: 院校/专业/录取/保研/就业/  │
+│  行业/实验室/社媒/校园/风险         │
 └─────────────────────────────────────┘
          │
          ▼
 ┌─────────────────────────────────────┐
-│  Phase 2: Claim 抽取                │
-│  DeepSeek API 批量处理              │
-│  搜索文本 → 结构化声明              │
+│  Phase 3: Claude 原生分析           │
+│  规则引擎(纯Python) → 共识/风险     │
+│  Claude 交叉验证 + 可信度校准       │
+│  反证检测 + 缺失维度识别            │
 └─────────────────────────────────────┘
          │
          ▼
 ┌─────────────────────────────────────┐
-│  Phase 3: 交叉验证 & 评分           │
-│  共识/争议/孤证 · 13种风险 · 反证  │
-└─────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────┐
-│  Phase 4: 报告生成                  │
-│  总体结论 + 12章节 + 证据墙 + QA    │
+│  Phase 4: 报告撰写                  │
+│  总体结论 + 14章节 + 证据墙 + QA    │
+│  15,000-25,000 字 深度分析          │
 └─────────────────────────────────────┘
 ```
 
@@ -119,22 +106,22 @@ Claude 将自动执行：
 
 ---
 
-## 📁 文件说明
+## 📁 仓库结构
 
 ```
 gaokao-evidence-skill/
-├── SKILL.md              # Skill 定义 (600+ 搜索查询模板)
-├── analyze.py            # 分析引擎 (搜索→Claim→报告)
-├── quick_test.py         # 快速验证脚本
+├── SKILL.md                  # Skill 定义 (600+ 搜索查询模板 + 完整工作流)
 ├── packages/
-│   ├── config.py         # 配置 (从 apikey.txt 读 API Key)
-│   ├── nlp/
-│   │   └── llm_service.py   # DeepSeek API 封装
-│   └── ranking/
-│       └── scoring.py       # 评分/风险/共识分析
-├── apikey.txt.example    # API Key 模板
-├── pyproject.toml        # Python 依赖
-├── reports/              # 报告输出目录
+│   ├── config.py             # 路径配置
+│   ├── ranking/
+│   │   └── scoring.py       # 评分/风险/共识分析（纯规则引擎）
+│   └── nlp/
+│       └── pii_cleaner.py   # PII 清理
+├── tests/
+│   └── test_scoring.py      # 15 个单元测试
+├── pyproject.toml            # Python 项目配置
+├── reports/                  # 报告输出目录
+├── LICENSE
 └── README.md
 ```
 
@@ -142,12 +129,10 @@ gaokao-evidence-skill/
 
 ## 🔑 依赖
 
-- **Claude Code** — 提供 WebSearch 能力
-- **DeepSeek API** — Claim 抽取 + 报告生成
-- **Python 3.11+** — 运行分析脚本
-- `openai` + `tiktoken` — Python 依赖 (`pip install -e .`)
-
-不需要 Docker、PostgreSQL、SearXNG 或任何其他基础设施。
+- **Claude Code** — 提供 WebSearch + 原生推理能力
+- **Python 3.11+** — 运行规则引擎（`scoring.py`）
+- **零 Python 依赖** — 规则引擎仅用标准库
+- **零外部 API** — 不需要 DeepSeek/OpenAI/任何 API Key
 
 ---
 
@@ -155,7 +140,7 @@ gaokao-evidence-skill/
 
 ```bash
 pip install -e ".[dev]"
-python quick_test.py "南京理工大学" "自动化" reports/raw_search_南京理工大学_自动化.json
+pytest tests/ -v
 ```
 
 ---
