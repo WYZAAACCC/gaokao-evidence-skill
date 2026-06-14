@@ -26,15 +26,21 @@
 
 ```bash
 # 克隆到 Claude Code skills 目录
-git clone https://github.com/YOUR_USER/gaokao-evidence-skill.git \
+# macOS / Linux:
+git clone https://github.com/WYZAAACCC/gaokao-evidence-skill.git \
   ~/.claude/skills/gaokao-evidence/
+cd ~/.claude/skills/gaokao-evidence
 
-# Windows:
-git clone https://github.com/YOUR_USER/gaokao-evidence-skill.git \
-  %USERPROFILE%\.claude\skills\gaokao-evidence\
+# Windows (PowerShell):
+git clone https://github.com/WYZAAACCC/gaokao-evidence-skill.git \
+  $env:USERPROFILE\.claude\skills\gaokao-evidence\
+cd $env:USERPROFILE\.claude\skills\gaokao-evidence\
+
+# 安装 Python 依赖 (仅需 openai + tiktoken)
+pip install -e .
 
 # 放入 DeepSeek API Key
-echo "sk-your-api-key" > ~/.claude/skills/gaokao-evidence/apikey.txt
+echo "sk-your-api-key" > apikey.txt
 ```
 
 ### 2. 使用
