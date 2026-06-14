@@ -1,0 +1,74 @@
+# === Secrets (NEVER COMMIT) ===
+.env
+*.env.local
+*.env.production
+apikey.txt
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+*.whl
+
+# === Virtual Environment ===
+.venv/
+venv/
+env/
+.conda/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# === Testing ===
+.pytest_cache/
+.coverage
+htmlcov/
+
+# === Generated Output ===
+reports/*_报告.md
+reports/*_meta.json
+reports/raw_search_*.json
+
+# === Infrastructure (not part of the skill) ===
+apps/
+configs/
+db/
+pipelines/
+worker/
+docker-compose.yml
+Dockerfile
+tests/
+scripts/
+third_party/
+.env.example
+CHANGELOG.md
+CONTRIBUTING.md
+
+# === Infrastructure packages ===
+packages/crawlers/
+packages/parsers/
+packages/storage/
+packages/agents/
+packages/nlp/embedding.py
+packages/nlp/entity_resolver.py
+packages/nlp/evidence_pipeline.py
+packages/ranking/admission_model.py
+
+# === Claude internal ===
+.claude/
+
+# === Docs (ARCHITECTURE.md is the full-system doc, not needed for skill) ===
+docs/
+工程文档.md
+
+# === Logs ===
+*.log
