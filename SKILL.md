@@ -14,7 +14,7 @@
 - **覆盖全面**: 必须覆盖全部维度，不得跳过，每维度至少搜索30条以上
 - **社媒重要**: 大量搜索知乎/贴吧/小红书/B站等平台的真实反馈（120+条）
 - **大几百条查询**: 总搜索量≥500条，确保信息量达到"能决定命运"的级别
-- **持久执行**: 分批执行搜索，每批50条，保存中间结果，直到全部完成
+- **持久执行**: 每批执行 8-10 条搜索，每 50 条保存中间结果，直到全部完成
 
 ## Workflow
 
@@ -352,7 +352,7 @@ python analyze.py "{school}" "{major}" "reports/raw_search_{school}_{major}.json
 #### 4.7 保研经验贴 (8条)
 - `{school} {major} 保研 经验贴 知乎 全过程`
 - `{school} {major} 保研 上岸 小红书 晒 offer`
-- `{school} {major} 从{ school }到清华 自动化 保研 经历`
+- `{school} {major} 从{school}到清华 自动化 保研 经历`
 - `{school} {major} 保研 边缘人 逆袭 成功 经验`
 - `{school} {major} 保研 浙大 上交 中科院 面经`
 - `{school} {major} GPA3.5 能保研吗 保研成功`
@@ -586,7 +586,7 @@ python analyze.py "{school}" "{major}" "reports/raw_search_{school}_{major}.json
 - `{school} {major} 知乎 大学四年 怎么规划 经验`
 - `{school} {major} 知乎 这个专业 让我 最满意 的地方`
 - `{school} {major} 知乎 这个专业 让我 最不满意 的地方`
-- `{school} {major} 知乎 在{n}学自动化 是怎样的体验`
+- `{school} {major} 知乎 在{school}学自动化 是怎样的体验`
 - `{school} {major} 知乎 我为什么 退学 复读`
 - `{school} {major} 知乎 如果当时 选了 XX 现在 会更好吗`
 - `{school} {major} 知乎 高中同学 vs 大学同学 发展 对比`
@@ -908,7 +908,7 @@ python analyze.py "{school}" "{major}" "reports/raw_search_{school}_{major}.json
 ### 速率控制
 - WebSearch 每批之间间隔 2-3 秒
 - 如果某次搜索失败（无结果），记录后继续下一条
-- 每批50条后暂停1分钟
+- 每完成 50 条搜索后暂停 1 分钟，再继续下一轮
 
 ### 分析管线
 搜索全部完成后，运行分析脚本（调用DeepSeek API进行Claim抽取和报告生成）：

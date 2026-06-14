@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import hashlib
 from typing import Optional, Any
@@ -219,12 +220,10 @@ async def _call_llm(
             raise
         except RateLimitError as e:
             # 速率限制 — 等待后重试
-            import asyncio
             await asyncio.sleep(2 ** attempt)
             last_error = e
         except Exception as e:
             last_error = e
-            import asyncio
             await asyncio.sleep(1)
 
     raise last_error or RuntimeError("LLM call failed after 3 retries")

@@ -66,10 +66,10 @@ async def analyze(school_name: str, major_name: str, raw_data_path: str) -> str:
         if texts:
             all_texts.append('\n'.join(texts))
 
-    print(f"=" * 60)
+    print("=" * 60)
     print(f"  高考志愿证据推荐系统 — 分析引擎")
     print(f"  目标: {school_name} - {major_name}")
-    print(f"=" * 60)
+    print("=" * 60)
     print(f"  搜索批次: {total_queries}")
     print(f"  去重后的证据源: {len(evidence_summaries)}")
     print(f"  唯一URL: {len(seen_urls)}")
@@ -158,7 +158,7 @@ async def analyze(school_name: str, major_name: str, raw_data_path: str) -> str:
 
     print(f"  共识: {len(consensus.get('consensus',[]))}条 | "
           f"争议: {len(consensus.get('controversies',[]))}条 | "
-          f"孤证: {len(consensus.get('isolated',[]))}条")
+          f"孤证: {len(consensus.get('isolated_claims',[]))}条")
     print(f"  风险: {len(risks)}条 | 反证对: {len(counters)}对")
     print(f"  综合可信度: {conf['level']} ({conf['score']:.2f})")
 
@@ -209,7 +209,7 @@ async def analyze(school_name: str, major_name: str, raw_data_path: str) -> str:
 > **搜索规模**: {total_queries} 次查询 | {len(evidence_summaries)} 条证据源 | {len(all_claims)} 条结构化声明
 > **维度覆盖**: {len(covered)}/{len(expected_keys)} ({', '.join(sorted(covered))})
 > **综合可信度**: **{conf['level']}** ({conf['score']:.2f})
-> **共识/争议/孤证**: {len(consensus.get('consensus',[]))}/{len(consensus.get('controversies',[]))}/{len(consensus.get('isolated',[]))}
+> **共识/争议/孤证**: {len(consensus.get('consensus',[]))}/{len(consensus.get('controversies',[]))}/{len(consensus.get('isolated_claims',[]))}
 > **风险项**: {len(risks)} | **反证对**: {len(counters)}
 
 ---

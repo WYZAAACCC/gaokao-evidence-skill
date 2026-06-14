@@ -1,3 +1,10 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["packages*"]
+
 [project]
 name = "gaokao-evidence-skill"
 version = "0.2.0"
@@ -24,7 +31,3 @@ target-version = "py311"
 [tool.black]
 line-length = 100
 target-version = ["py311"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-asyncio_mode = "auto"

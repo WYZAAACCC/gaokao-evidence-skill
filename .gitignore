@@ -46,7 +46,6 @@ pipelines/
 worker/
 docker-compose.yml
 Dockerfile
-tests/
 scripts/
 third_party/
 .env.example
